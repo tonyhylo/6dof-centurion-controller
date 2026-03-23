@@ -1,0 +1,17 @@
+# --- Backend / Python ---
+**/venv/
+**/__pycache__/
+*.py[cod]
+.env
+
+# --- Frontend / JavaScript ---
+**/node_modules/
+**/dist/
+.eslintcache
+*.log
+
+# --- System / IDE ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
