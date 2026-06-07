@@ -1,121 +1,74 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import RobotCanvas from './components/RobotCanvas';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  // 1. Array state keeping track of all 6 joint values in radians
+  const [angles, setAngles] = useState([0, 0, 0, 0, 0, 0]);
+  
+  // 2. State keeping track of the final computed endpoint Cartesian coordinate 
+  const [position, setPosition] = useState({ x: 0, y: 0, z: 0 });
+
+  // 3. Automated lifecycle loop: recalculate position whenever any slider shifts
+  useEffect(() => {
+    // Calling your global FastAPI bridge helper function
+    window.solveKinematics(angles)
+      .then(data => {
+        if (data && data.position) {
+          setPosition(data.position);
+        }
+      })
+      .catch(err => console.error("API Kinematics Error: ", err));
+  }, [angles]);
+
+  // 4. Handler to update a single specific joint index in the state array
+  const handleSliderChange = (index, value) => {
+    const updatedAngles = [...angles];
+    updatedAngles[index] = parseFloat(value);
+    setAngles(updatedAngles);
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', fontFamily: 'sans-serif' }}>
+      
+      {/* LEFT COLUMN: The 3D Render Viewport window */}
+      <div style={{ flex: 1, height: '100%', position: 'relative', background: '#1a1a1a' }}>
+        <RobotCanvas angles={angles} />
+      </div>
 
-      <div className="ticks"></div>
+      {/* RIGHT COLUMN: The Interactive Control Dashboard telemetry panel */}
+      <div style={{ width: '400px', padding: '20px', background: '#f5f6fa', overflowY: 'auto', boxShadow: '-2px 0 10px rgba(0,0,0,0.1)' }}>
+        <h2>6-DOF Controller Terminal</h2>
+        <hr />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        {/* Telemetry Display Sub-card */}
+        <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #dcdde1' }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#2f3640' }}>End-Effector Pose (Meters)</h3>
+          <p style={{ fontFamily: 'monospace', margin: '5px 0' }}><b>X:</b> {position.x.toFixed(4)}</p>
+          <p style={{ fontFamily: 'monospace', margin: '5px 0' }}><b>Y:</b> {position.y.toFixed(4)}</p>
+          <p style={{ fontFamily: 'monospace', margin: '5px 0' }}><b>Z:</b> {position.z.toFixed(4)}</p>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* Dynamic Generation Loop for the 6 Range Sliders */}
+        <h3>Joint Space Configuration</h3>
+        {angles.map((angle, index) => (
+          <div key={index} style={{ marginBottom: '15px', background: '#fff', padding: '10px', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+              <label style={{ fontWeight: 'bold' }}>Joint {index + 1}</label>
+              <span style={{ fontFamily: 'monospace' }}>{angle.toFixed(2)} rad</span>
+            </div>
+            <input 
+              type="range"
+              min="-3.14" // -180 degrees in radians
+              max="3.14"  // +180 degrees in radians
+              step="0.01"
+              value={angle}
+              onChange={(e) => handleSliderChange(index, e.target.value)}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+        ))}
+      </div>
+
+    </div>
+  );
 }
-
-export default App
