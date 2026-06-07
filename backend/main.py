@@ -1,9 +1,23 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from kinematics.solver import KinematicsEngine
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 # This launches the FastAPI
 app = FastAPI() 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,            # Allows your specific frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],              # Allows GET, POST, OPTIONS, etc.
+    allow_headers=["*"],              # Allows all custom headers
+)
 
 engine = KinematicsEngine()
 
